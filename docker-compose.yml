@@ -1,0 +1,123 @@
+version: '3.7'
+
+services:
+  # Management (ndb_mgm)
+  management:
+    image: mysql/mysql-cluster:8.0.32
+    container_name: ndb_mgm
+    command: ndb_mgmd --ndb-nodeid=1 --reload --initial
+    volumes:
+      - "./data/ndb_mgmd:/var/lib/mysql/"
+      - "./config/mysqlcluster/my.cnf:/etc/my.cnf"
+      - "./config/mysqlcluster/mysql-cluster.cnf:/etc/mysql-cluster.cnf"
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.2
+
+  # NDB Node 1 (ndb)
+  ndb1:
+    image: mysql/mysql-cluster:8.0.32
+    container_name: ndb1
+    command: ndbd --ndb-nodeid=2 --connect-string 174.17.0.2
+    volumes:
+      - "./data/ndb1:/var/lib/mysql/"
+      - "./config/mysqlcluster/mysql-cluster.cnf:/etc/mysql-cluster.cnf"
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.3
+
+  # NDB Node 2 (ndb)
+  ndb2:
+    image: mysql/mysql-cluster:8.0.32
+    container_name: ndb2
+    command: ndbd --ndb-nodeid=3 --connect-string 174.17.0.2
+    volumes:
+      - "./data/ndb2:/var/lib/mysql/"
+      - "./config/mysqlcluster/mysql-cluster.cnf:/etc/mysql-cluster.cnf"
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.4
+
+  # NDB Node 3 (ndb)
+  ndb3:
+    image: mysql/mysql-cluster:8.0.32
+    container_name: ndb3
+    command: ndbd --ndb-nodeid=4 --connect-string 174.17.0.2
+    volumes:
+      - "./data/ndb3:/var/lib/mysql/"
+      - "./config/mysqlcluster/mysql-cluster.cnf:/etc/mysql-cluster.cnf"
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.5
+
+  # NDB Node 4 (ndb)
+  ndb4:
+    image: mysql/mysql-cluster:8.0.32
+    container_name: ndb4
+    command: ndbd --ndb-nodeid=5 --connect-string 174.17.0.2
+    volumes:
+      - "./data/ndb4:/var/lib/mysql/"
+      - "./config/mysqlcluster/mysql-cluster.cnf:/etc/mysql-cluster.cnf"
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.6
+
+  # MySQL Node (api)
+  mysql:
+    image: mysql/mysql-cluster:8.0.32
+    container_name: mysql
+    command: mysqld --ndb-nodeid=6 --ndb-connectstring 174.17.0.2 --default-storage-engine=NDBCLUSTER
+    volumes:
+      - "./data/mysql:/var/lib/mysql/"
+      - "./config/mysqlcluster/mysql-cluster.cnf:/etc/mysql-cluster.cnf"
+      - "./config/initdb/users.sql:/docker-entrypoint-initdb.d/users.sql"
+      - "./config/initdb/data.sql:/docker-entrypoint-initdb.d/data.sql"
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.10
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      SERVICE_NAME: mysql
+      MYSQL_TCP_PORT: 3306
+  
+  # PHPMyAdmin
+  pma:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    ports:
+      - "8181:80"
+    environment:
+      PMA_HOSTS: mysql
+      PMA_PORTS: 3306
+      PMA_USER: admin
+      PMA_PASSWORD: admin
+    links:
+     - mysql
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.11
+
+  # Drupal Webapp
+  drupal:
+    image: drupal:apache-bookworm
+    container_name: drupal10
+    ports:
+      - 8080:80
+    volumes:
+      - /var/www/html/modules
+      - /var/www/html/profiles
+      - /var/www/html/themes
+      - /var/www/html/sites
+    restart: always
+    networks:
+      mysql_network:
+        ipv4_address: 174.17.0.12
+
+networks:
+  mysql_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 174.17.0.0/16
