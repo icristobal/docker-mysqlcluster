@@ -1,5 +1,3 @@
-version: '3.7'
-
 services:
   # Management (ndb_mgm)
   management:
@@ -87,7 +85,7 @@ services:
     image: phpmyadmin/phpmyadmin
     container_name: pma
     ports:
-      - "8181:80"
+      - "8080:80"
     environment:
       PMA_HOSTS: mysql
       PMA_PORTS: 3306
@@ -99,18 +97,18 @@ services:
       mysql_network:
         ipv4_address: 174.17.0.11
 
-  # Drupal Webapp
-  drupal:
+  # Webapp
+  webapp:
     image: drupal:apache-bookworm
-    container_name: drupal10
+    container_name: webapp
     ports:
-      - 8080:80
+      - 80:80
     volumes:
       - /var/www/html/modules
       - /var/www/html/profiles
       - /var/www/html/themes
       - /var/www/html/sites
-    restart: always
+    restart: no
     networks:
       mysql_network:
         ipv4_address: 174.17.0.12
